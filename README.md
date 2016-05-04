@@ -8,6 +8,9 @@ Requires a version of RST to be set up with correct environment variables. After
 
 fitacf.3.0 is a complete rewrite of the ACF fitting routine using in the RST software package. fitacf.3.0 attempts to improve on many aspects of the current version, fitacf.2.7 both in terms of algorithm correctness, and software design.
 
+###Algorithm description
+TODO
+
 ###Software design
 
 fitacf.3.0 was designed to be easy to read,easy to test, and easy to modify. In contrast to the older versions, variables and function names, and files are more self descriptive so that it is easier to locate things and understand the code. Data is now better [encapsulated](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming)) so that it is clear what is being operated on at all times. And because data follows a better encapsulation scheme, it means that functions can be designed with greatly reduced [coupling](https://en.wikipedia.org/wiki/Coupling_(computer_programming)) compared to the older versions.
