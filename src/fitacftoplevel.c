@@ -239,6 +239,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     /*Here we determine the fluctuation level for which ACFs are pure noise*/
     noise_pwr = ACF_cutoff_pwr(fit_prms); 		/*Set this to 1 for processing simulated data without the noise.*/ 
    /* noise_pwr = 1; */
+   
     /*Here we fill the list of ranges with range nodes.*/
     Fill_Range_List(fit_prms, ranges);
 
@@ -252,7 +253,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     llist_for_each_arg(ranges,(node_func_arg)Fill_Data_Lists_For_Range,lags,fit_prms);
      
     /*llist_for_each(ranges,print_uncorrected_phase); */
-    llist_for_each(ranges,print_range_node);
+    /*llist_for_each(ranges,print_range_node);*/
 
     /*Tx overlapped data is removed from consideration*/
     Filter_TX_Overlap(ranges, lags, fit_prms); 	/*Comment this out for simulted data without TX overlap*/ 
