@@ -52,4 +52,6 @@ In the echo parameter determination stage, the fitted values are then used to de
 ###Testing
 There are no designed unit tests to fitacf.3.0, but there are functions that can be used to log almost every data structure to a file so that you can follow along with what is happening in more detail. To use this, just call these print functions where you want, or pass as a callback to `llist_for_each` to log details of each node in a list. Samples of this are commented out in the top level.
 
+You can also change the -g option in the makefile to -O3 for massive speed increases. -g just allows for stepping through the debugger.
+
 
