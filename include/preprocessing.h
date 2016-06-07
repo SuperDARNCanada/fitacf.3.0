@@ -30,7 +30,7 @@ July 2015
 #include "fit_structures.h"
 
 #define MIN_LAGS 3
-#define ACF_SNR_CUTOFF 10.0
+#define ACF_SNR_CUTOFF 1.0
 #define ALPHA_CUTOFF 2
 #define FLUCTUATION_CUTOFF_COEFF 2
 
