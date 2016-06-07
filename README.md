@@ -50,7 +50,7 @@ The fitting routine uses the exact algorithms for 1 or 2 parameter straight line
 In the echo parameter determination stage, the fitted values are then used to determine values for things such as velocity, elevation, power, and spectral width with their respective errors. These parameters are then written out to a file.
 
 ###Testing
-There are no designed unit tests to fitacf.3.0, but there are functions that can be used to log almost every data structure to a file so that you can follow along with what is happening in more detail. To use this, just call these print functions where you want, or pass as a callback to `llist_for_each` to log details of each node in a list. Samples of this are commented out in the top level.
+There are no designed unit tests to fitacf.3.0, but there are functions that can be used to log almost every data structure to a file so that you can follow along with what is happening in more detail. To use this, just call these print functions where you want, or pass as a callback to `llist_for_each` to log details of each node in a list. Samples of this are commented out in the top level. The testing code supplied was used in an earlier version of development until Pasha took over testing using his own tools. I will bring this code up to the current version of development as its still useful for testing individual pieces of fitacf.3.0.
 
 You can also change the -g option in the makefile to -O3 for massive speed increases. -g just allows for stepping through the debugger.
 
