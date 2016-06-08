@@ -345,7 +345,7 @@ void set_gsct(llist_node range, struct FitRange* fit_range_array){
 
 	v_abs = fabs(fit_range_array[range_node->range].v);
 	w = fit_range_array[range_node->range].w_l;
-	fit_range_array[range_node->range].gsct = (v_abs - w * (V_max/W_max) < 0) ? 1 : 0;
+	fit_range_array[range_node->range].gsct = (v_abs - (V_max - w * (V_max/W_max)) < 0) ? 1 : 0;
 }
 
 /**
