@@ -55,7 +55,7 @@ void allocate_fit_data(struct FitData* fit_data, FITPRMS* fit_prms){
     }
 
     if(fit_data->xrng == NULL) fit_data->xrng = new_range_array(fit_prms);
-    if(fit_data->rng == NULL){
+    if(fit_data->xrng == NULL){
     	fprintf(stderr,"COULD NOT ALLOCATE fit_data->xrng\n");
     }
     else{
