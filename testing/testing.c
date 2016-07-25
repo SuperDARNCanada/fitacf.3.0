@@ -1,5 +1,5 @@
-#include "acfproc.h"
-#include "acffits.h"
+#include "preprocessing.h"
+#include "fitting.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,16 +51,16 @@ int main(){
 	fitted_prms->tdiff = 0;
 	fitted_prms->vdir = 0;
 
-	fitted_prms->acfd = malloc(fitted_prms.nrang * fitted_prms.mplgs * sizeof(*fitted_prms->acfd));
-	fitted_prms->acfd[0] = malloc(fitted_prms.nrang * fitted_prms.mplgs * 2 * sizeof(**fitted_prms->acfd));
-	fitted_prms->pwr0 = malloc(fitted_prms.nrang * sizeof(*fitted_prms->pwr0));
+	fitted_prms->acfd = malloc(fitted_prms->nrang * fitted_prms->mplgs * sizeof(*fitted_prms->acfd));
+	fitted_prms->acfd[0] = malloc(fitted_prms->nrang * fitted_prms->mplgs * 2 * sizeof(**fitted_prms->acfd));
+	fitted_prms->pwr0 = malloc(fitted_prms->nrang * sizeof(*fitted_prms->pwr0));
 
-	for(i=0;i<(fitted_prms.nrang * fitted_prms.mplgs);i++){
-		fitted_prms.acfd[i] = fitted_prms.acfd[0] + i * 2; 
+	for(i=0;i<(fitted_prms->nrang * fitted_prms->mplgs);i++){
+		fitted_prms->acfd[i] = fitted_prms->acfd[0] + i * 2; 
 	}
 
 
-	Determine_Lags(lags,&fitted_prms);
+	Determine_Lags(lags,fitted_prms);
 /*	llist_for_each(lags,print_lag_node);*/
 /*	for(i=0;i<fitted_prms.mplgs+1;i++){
 		printf("lags %d %d\n",lags[i][0],lags[i][1]);
@@ -90,27 +90,27 @@ int main(){
         i = 0;
 		while (fgets(buf,1024,entry_file) != NULL){
 			sscanf(buf,"%lf %lf",&R, &I);
-			fitted_prms.acfd[i][0] = R;
-			fitted_prms.acfd[i][1] = I;
+			fitted_prms->acfd[i][0] = R;
+			fitted_prms->acfd[i][1] = I;
 			i++;
 		}
 
-		for(i = 0;i<fitted_prms.nrang;i++){
-			real = fitted_prms.acfd[i * fitted_prms.mplgs][0];
-			imag = fitted_prms.acfd[i * fitted_prms.mplgs][1];
-			fitted_prms.pwr0[i] = sqrt(real * real + imag * imag);
+		for(i = 0;i<fitted_prms->nrang;i++){
+			real = fitted_prms->acfd[i * fitted_prms->mplgs][0];
+			imag = fitted_prms->acfd[i * fitted_prms->mplgs][1];
+			fitted_prms->pwr0[i] = sqrt(real * real + imag * imag);
 		}
 
-		Filter_Bad_ACFs(&fitted_prms,good_ranges);
+		Filter_Bad_ACFs(fitted_prms,good_ranges,1);
 /*		llist_for_each(good_ranges,print_range_node);*/
 
 		/*llist_for_each_arg(good_ranges,Find_CRI,&fitted_prms,NULL);*/
 	/*	llist_for_each(good_ranges,print_range_node);*/
 
-		llist_for_each_arg(good_ranges,Find_Alpha,lags,&fitted_prms);
+		llist_for_each_arg(good_ranges,Find_Alpha,lags,fitted_prms);
 /*		llist_for_each(good_ranges,print_range_node);*/
 
-		llist_for_each_arg(good_ranges,Fill_Pwrs_And_Phases_For_Range,lags,&fitted_prms);
+		llist_for_each_arg(good_ranges,Fill_Data_Lists_For_Range,lags,fitted_prms);
 /*		llist_for_each(good_ranges,print_range_node);*/
 
 	/*	Filter_TX_Overlap(good_ranges, lags, bad_samples, &fitted_prms);*/
@@ -121,7 +121,7 @@ int main(){
 
 		llist_for_each(good_ranges,Power_Fits);
 		
-		Phase_Fit(good_ranges,lags,&fitted_prms);
+		ACF_Phase_Fit(good_ranges,fitted_prms);
 		llist_for_each(good_ranges,print_range_node);
         /* When you finish with the file, close it */
         fclose(entry_file);
