@@ -153,7 +153,6 @@ void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fitted_p
 	  list traversal easier at this point. This value gets set in 
 	  new_phase_node()*/
 	inverse_alpha_2 = 1/phase_node->sigma;
-
 	pwr = exp(-1 * fabs(range_node->l_pwr_fit->b) * phase_node->t);
 
 	inverse_pwr_2 = 1/(pwr * pwr);

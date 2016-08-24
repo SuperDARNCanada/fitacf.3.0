@@ -239,7 +239,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     /*Here we determine the fluctuation level for which ACFs are pure noise*/
     noise_pwr = ACF_cutoff_pwr(fit_prms); 		/*Set this to 1 for processing simulated data without the noise.*/ 
    /* noise_pwr = 1; */
-   
+
     /*Here we fill the list of ranges with range nodes.*/
     Fill_Range_List(fit_prms, ranges);
 
@@ -251,28 +251,28 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
 
     /*Each range node has its ACF power, ACF phase, and XCF phase(elevation) data lists filled*/
     llist_for_each_arg(ranges,(node_func_arg)Fill_Data_Lists_For_Range,lags,fit_prms);
-     
+    
     /*llist_for_each(ranges,print_uncorrected_phase); */
-    /*llist_for_each(ranges,print_range_node);*/
+    /* llist_for_each(ranges,print_range_node);*/
 
     /*Tx overlapped data is removed from consideration*/
     Filter_TX_Overlap(ranges, lags, fit_prms); 	/*Comment this out for simulted data without TX overlap*/ 
-    
+    /*llist_for_each(ranges,print_range_node);*/ 
     /*Criterion is applied to filter low power lags that are considered too close to
     statistical fluctuations*/
-     llist_for_each_arg(ranges,(node_func_arg)Filter_Low_Pwr_Lags,fit_prms,NULL);  
+    llist_for_each_arg(ranges,(node_func_arg)Filter_Low_Pwr_Lags,fit_prms,NULL);
 
     /*Criterion is applied to filter ranges that hold no merit*/
     Filter_Bad_ACFs(fit_prms,ranges,noise_pwr); 
-
+    
     /*At this point all data is now processed and valuable so we perform power fits.
     The phase fitting stage is dependant on fitted power and must be done first*/
     llist_for_each(ranges,(node_func)Power_Fits);
-
+    
     /*We perform the phase fits for velocity and elevation. The ACF phase fit improves the
     fit of the XCF phase fit and must be done first*/
     ACF_Phase_Fit(ranges,fit_prms);
-
+    
     XCF_Phase_Fit(ranges,fit_prms);
 
     /*llist_for_each(ranges,print_range_node);*/

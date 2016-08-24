@@ -100,8 +100,8 @@ void ACF_Determinations(llist ranges, FITPRMS* fit_prms,struct FitData* fit_data
    	llist_for_each_arg(ranges,(node_func_arg)set_qflg,fit_data->rng,NULL);
    	llist_for_each_arg(ranges,(node_func_arg)set_p_l,fit_data->rng,&noise_pwr);
    	llist_for_each_arg(ranges,(node_func_arg)set_p_l_err,fit_data->rng,&noise_pwr);
-   	llist_for_each_arg(ranges,(node_func_arg)set_s_l,fit_data->rng,&noise_pwr);
-   	llist_for_each_arg(ranges,(node_func_arg)set_s_l_err,fit_data->rng,&noise_pwr);
+   	llist_for_each_arg(ranges,(node_func_arg)set_p_s,fit_data->rng,&noise_pwr);
+   	llist_for_each_arg(ranges,(node_func_arg)set_p_s_err,fit_data->rng,&noise_pwr);
    	llist_for_each_arg(ranges,(node_func_arg)set_v,fit_data->rng,fit_prms);
    	llist_for_each_arg(ranges,(node_func_arg)set_v_err,fit_data->rng,fit_prms);
    	llist_for_each_arg(ranges,(node_func_arg)set_w_l,fit_data->rng,fit_prms);
@@ -195,7 +195,7 @@ void set_p_l_err(llist_node range, struct FitRange* fit_range_array){
 /**
 Sets the value of the quadratic fitted lag 0 power in dB
 */
-void set_s_l(llist_node range, struct FitRange* fit_range_array, double* noise_pwr){
+void set_p_s(llist_node range, struct FitRange* fit_range_array, double* noise_pwr){
 	RANGENODE* range_node;
 	double noise_dB;
 
@@ -209,7 +209,7 @@ void set_s_l(llist_node range, struct FitRange* fit_range_array, double* noise_p
 /**
 Sets the value of the quadratic fitted lag 0 power error in dB
 */
-void set_s_l_err(llist_node range, struct FitRange* fit_range_array){
+void set_p_s_err(llist_node range, struct FitRange* fit_range_array){
 	RANGENODE* range_node;
 
 	range_node = (RANGENODE*) range;
@@ -389,7 +389,6 @@ void find_elevation(llist_node range, struct FitElv* fit_elev_array, FITPRMS* fi
 	antenna_sep = sqrt(x*x + y*y + z*z);
 
 	elev_corr = fit_prms->phidiff * asin(z/antenna_sep);
-
 	if (y > 0.0){
 		phi_sign = 1;
 	}
@@ -416,7 +415,6 @@ void find_elevation(llist_node range, struct FitElv* fit_elev_array, FITPRMS* fi
 
 	psi_kd = psi/(wave_num * antenna_sep);
 	theta = c_phi_0 * c_phi_0 - psi_kd * psi_kd;
-
 	if( (theta < 0.0) || (fabs(theta) > 1.0) ){
 		elevation = -elev_corr;
 	}
