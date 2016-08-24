@@ -65,6 +65,7 @@ void print_uncorrected_phase(llist_node node);
 void mark_bad_samples(FITPRMS *fit_prms, llist bad_samples);
 void filter_tx_overlapped_lags(llist_node range, llist lags, llist bad_samples);
 double ACF_cutoff_pwr(FITPRMS *fit_prms);
+double cutoff_power_correction(FITPRMS *fit_prms);
 void phase_correction(llist_node phase, double* slope_est);
 
 

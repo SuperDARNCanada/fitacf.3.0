@@ -545,6 +545,34 @@ void phase_correction(llist_node phase, double* slope_est){
 }
 
 /**
+Correction of the noise level which is underestimated 
+by using the 10 lowest values of lag0 power.
+*/
+
+double cutoff_power_correction(FITPRMS *fit_prms){
+  double i=0; 			/* Counter */
+  double corr=1;		/* Correction factor */
+  double x;			/* Normalised power for calculating model PDF (Gaussian)*/
+  double pdf;			/* PDF */
+  double cpdf=0;		/* Cumulative PDF value*/
+  double cpdfx=0;		/* Cumulative value of PDF*x -- needed for calcualting the mean */
+  
+  double s=1./sqrt(fit_prms->nave); /* Model standard deviation */   
+  
+  while(cpdf < 10./fit_prms->nrang){
+    x=i/1000.;
+    pdf=exp(-((x-1.)*(x-1.)/(2.*s*s)))/s/sqrt(2*M_PI)/1000.;	/* Normalised Gaussian distribution centered at 1 */
+    cpdf=cpdf+pdf;
+    cpdfx=cpdfx+pdf*x;
+    i++;
+  }
+  
+  corr=1./(cpdfx/cpdf);		/* Correcting factor as the inverse of a normalised mean */
+  return corr;
+  
+}
+
+/**
 This function determines the minimum power level for which an ACF is pure
 noise. This is used to filter bad ACFs.
 */
@@ -590,7 +618,7 @@ double ACF_cutoff_pwr(FITPRMS *fit_prms){
     }
 
     ni = (ni > 0) ? ni :  1;
-    min_pwr = min_pwr/ni;
+    min_pwr = min_pwr/ni * cutoff_power_correction(fit_prms);
     if (min_pwr < 1.0) min_pwr = fit_prms->noise;
 
     free(pwr_levels);
