@@ -49,8 +49,8 @@ void lag_0_pwr_in_dB(struct FitRange* fit_range_array,FITPRMS* fit_prms,double n
 void set_qflg(llist_node range,struct FitRange* fit_range_array);
 void set_p_l(llist_node range, struct FitRange* fit_range_array, double* noise_pwr);
 void set_p_l_err(llist_node range, struct FitRange* fit_range_array);
-void set_s_l(llist_node range, struct FitRange* fit_range_array, double* noise_pwr);
-void set_s_l_err(llist_node range, struct FitRange* fit_range_array);
+void set_p_s(llist_node range, struct FitRange* fit_range_array, double* noise_pwr);
+void set_p_s_err(llist_node range, struct FitRange* fit_range_array);
 void set_v(llist_node range, struct FitRange* fit_range_array, FITPRMS* fit_prms);
 void set_v_err(llist_node range, struct FitRange* fit_range_array, FITPRMS* fit_prms);
 void set_w_l(llist_node range, struct FitRange* fit_range_array, FITPRMS* fit_prms);

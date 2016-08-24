@@ -135,6 +135,8 @@ PHASENODE* new_elev_node(int range, double alpha_2, LAGNODE* lag, FITPRMS *fit_p
 
 }
 
+
+
 /**
 Frees all memory for range data
 */
@@ -310,17 +312,15 @@ bool range_node_eq(llist_node node,llist_node cmp){
 Callback used to compare alpha
 */
 bool alpha_node_eq(llist_node node,llist_node cmp){
-	double alpha_node;
-	double value;
+	ALPHANODE* alpha_node;
+	int value;
 
-	alpha_node = *(double*) node;
-	value = *(double*)(cmp);
+	alpha_node = (ALPHANODE*) node;
+	value = *(int*)(cmp);
 
-	return (alpha_node == value);
+	return (alpha_node->lag_idx == value);
 
 }
-
-
 
 
 
@@ -333,17 +333,20 @@ bool alpha_node_eq(llist_node node,llist_node cmp){
 
 
 void print_node(llist_node node){
-	printf("sample %d\n",*(int*)(node));
+	fprintf(stderr,"sample %d\n",*(int*)(node));
 }
 
 void print_alpha_node(llist_node node, FILE* fp){
-	fprintf(fp,"%f ",*(double*)(node));
+	ALPHANODE* alpha_2;
+	alpha_2 = (ALPHANODE*)(node);
+	fprintf(fp,"%f ",alpha_2->alpha_2);
 }
 
 void print_lag_node(llist_node node){
 	LAGNODE* lag;
 	lag = (LAGNODE*)(node);
-	printf("lag %d %d %d %d\n",lag->lag_idx,lag->lag_num,lag->pulses[0],lag->pulses[1]);
+	printf("lag %d %d %d %d %d %d\n",lag->lag_idx,lag->lag_num,lag->pulses[0],
+		lag->pulses[1],lag->sample_base1,lag->sample_base2);
 
 }
 
@@ -418,7 +421,7 @@ and fills a list of these values. Uses formulas from Bendat and Piersol.
 */
 void calculate_alpha_at_lags(llist_node lag, llist_node range, double* lag_0_pwr){
 	double pulse_i_cri,pulse_j_cri;
-	double* alpha_2;
+	ALPHANODE* alpha_2;
 	LAGNODE* lag_node;
 	RANGENODE* range_node;
 	double pwr;
@@ -432,7 +435,8 @@ void calculate_alpha_at_lags(llist_node lag, llist_node range, double* lag_0_pwr
 	pulse_j_cri = range_node->CRI[lag_node->pulses[1]];
 
 	alpha_2 = malloc(sizeof(*alpha_2));
-	*alpha_2 = (pwr * pwr)/((pwr + pulse_i_cri) * (pwr + pulse_j_cri));
+	alpha_2->lag_idx = lag_node->lag_idx;
+	alpha_2->alpha_2 = (pwr * pwr)/((pwr + pulse_i_cri) * (pwr + pulse_j_cri));
 	llist_add_node(range_node->alpha_2,(llist_node)alpha_2,0);
 
 }
@@ -492,7 +496,6 @@ bad samples due to TX overlap.
 */
 void filter_tx_overlapped_lags(llist_node range, llist lags, llist bad_samples){
 	RANGENODE* range_node;
-	double* alpha_2;
 	LAGNODE* lag;
 
 	int smp1, smp2;
@@ -500,7 +503,6 @@ void filter_tx_overlapped_lags(llist_node range, llist lags, llist bad_samples){
 	range_node = (RANGENODE*) range;
 
 	llist_reset_iter(lags);
-	llist_reset_iter(range_node->alpha_2);
 
 	do{
 		llist_get_iter(lags,(void**)&lag);
@@ -513,21 +515,9 @@ void filter_tx_overlapped_lags(llist_node range, llist lags, llist bad_samples){
 			llist_delete_node(range_node->pwrs,&lag->lag_idx,TRUE,free);
 			llist_delete_node(range_node->phases,&lag->lag_idx,TRUE,free);
 			llist_delete_node(range_node->elev,&lag->lag_idx,TRUE,free);
+			llist_delete_node(range_node->alpha_2,&lag->lag_idx,TRUE,free);
 
-			llist_get_iter(range_node->alpha_2,(void**)&alpha_2);
-			/*We check to see if we remove the head of the list. If we do,
-		   	  we do not want to move the cursor as it will already be placed on
-		   	  the correct node after the head of the list is deleted*/
-			if(alpha_2 == llist_peek(range_node->alpha_2)){
-				llist_delete_node(range_node->alpha_2,alpha_2,TRUE,free);
-				continue;
-			}
-			else{
-				llist_delete_node(range_node->alpha_2,alpha_2,TRUE,free);
-			}
-			
 		}
-		llist_go_next(range_node->alpha_2);
 
 	}while(llist_go_next(lags) != LLIST_END_OF_LIST);
 
@@ -699,7 +689,7 @@ removed.
 */
 void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms){
 	double log_sigma_fluc;
-	double* alpha_2;
+	ALPHANODE* alpha_2;
 	PWRNODE* pwr_node;
 	RANGENODE* range_node;
 	int cutoff_lag = fit_prms->mplgs + 1;
@@ -724,7 +714,7 @@ void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms){
 		else{
 			/*Full cutoff criteria for lag filtering*/
 
-			if((1/ sqrt(*alpha_2) <= ALPHA_CUTOFF) && (pwr_node->ln_pwr <= log_sigma_fluc)){
+			if((1/ sqrt(alpha_2->alpha_2) <= ALPHA_CUTOFF) && (pwr_node->ln_pwr <= log_sigma_fluc)){
 				cutoff_lag = pwr_node->lag_idx;
 				llist_delete_node(range_node->pwrs,&pwr_node->lag_idx,TRUE,free);
 			}
@@ -851,7 +841,6 @@ void ACF_Phase_Unwrap(llist_node range){
 	do{
 
 		llist_get_iter(range_node->phases, (void**)&phase_curr);
-
 		if(phase_curr->sigma > 0){
 			S_xy += (phase_curr->phi * phase_curr->t)/(phase_curr->sigma * phase_curr->sigma);
 
@@ -862,6 +851,7 @@ void ACF_Phase_Unwrap(llist_node range){
 
 
 	 slope_est = S_xy / S_xx;
+
 
 	llist_for_each_arg(range_node->phases,(node_func_arg)phase_correction,&slope_est,NULL);
 
@@ -1006,7 +996,7 @@ void Fill_Data_Lists_For_Range(llist_node range,llist lags,FITPRMS *fit_prms){
 	PHASENODE* phase_node;
 	PHASENODE* elev_node;
 	LAGNODE* lag;
-	double* alpha_2;
+	ALPHANODE* alpha_2;
 	int i;
 
 	range_node = (RANGENODE*) range;
@@ -1023,9 +1013,9 @@ void Fill_Data_Lists_For_Range(llist_node range,llist lags,FITPRMS *fit_prms){
 		llist_get_iter(range_node->alpha_2,(void**)&alpha_2);
 		llist_get_iter(lags,(void**)&lag);
 
-		pwr_node = new_pwr_node(range_node->range,*alpha_2,lag,fit_prms);
-		phase_node = new_phase_node(range_node->range,*alpha_2,lag,fit_prms);
-		elev_node = new_elev_node(range_node->range,*alpha_2,lag,fit_prms);
+		pwr_node = new_pwr_node(range_node->range,alpha_2->alpha_2,lag,fit_prms);
+		phase_node = new_phase_node(range_node->range,alpha_2->alpha_2,lag,fit_prms);
+		elev_node = new_elev_node(range_node->range,alpha_2->alpha_2,lag,fit_prms);
 		if(pwr_node != NULL){ /* A NULL ptr means the pwr level was too low*/
 			llist_add_node(range_node->pwrs,(llist_node)pwr_node,0);
 		}

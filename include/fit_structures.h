@@ -70,6 +70,11 @@ typedef struct lag_node{
 	int sample_base2;
 }LAGNODE;
 
+typedef struct alpha{
+  int lag_idx;
+  double alpha_2;
+}ALPHANODE;
+
 typedef enum {
   FORWARD,
   BEHIND
