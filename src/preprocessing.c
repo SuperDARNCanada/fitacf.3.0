@@ -688,17 +688,22 @@ cutoff lag is determined, all subsequent lags in the list are
 removed.
 */
 void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms){
-	double log_sigma_fluc;
-	ALPHANODE* alpha_2;
-	PWRNODE* pwr_node;
-	RANGENODE* range_node;
-	int cutoff_lag = fit_prms->mplgs + 1;
+	double log_sigma_fluc = 0;
+	ALPHANODE* alpha_2 = NULL;
+	PWRNODE* pwr_node = NULL;
+	RANGENODE* range_node = NULL;
+	int cutoff_lag = 0;
+	
+	cutoff_lag = fit_prms->mplgs + 1;
 
 	range_node = (RANGENODE*) range;
 
 	/*Cutoff fluctuation level for filtering*/
 	log_sigma_fluc =  log(FLUCTUATION_CUTOFF_COEFF * fit_prms->pwr0[range_node->range]/sqrt(2 * fit_prms->nave));
-
+	
+	if (llist_size(range_node->pwrs) == 0){
+		return;
+	}
 
 	llist_reset_iter(range_node->pwrs);
 	llist_reset_iter(range_node->alpha_2);
