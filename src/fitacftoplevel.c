@@ -59,10 +59,10 @@ Allocates a new data structure for fit parameters.
 FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
 
     FITPRMS *fit_prms;
-    int rows,columns,n;
-    size_t is;
+    int columns,n;
+    size_t is, rows;
 
-  
+
     fit_prms=malloc(sizeof(FITPRMS));
 
     if (fit_prms==NULL){
@@ -80,7 +80,7 @@ FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
     for (n=0;n<2;n++) {
 
         fit_prms->lag[n]=malloc(sizeof(*fit_prms->lag[n])*(radar_prms->mplgs+1));
-    
+
         if (fit_prms->lag[n]==NULL){
             fprintf(stderr, "COULD NOT ALLOCATE fit_prms->lag[%d]\n",n);
             return NULL;
@@ -89,7 +89,7 @@ FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
 
 
     fit_prms->pwr0=malloc(sizeof(*fit_prms->pwr0)*radar_prms->nrang);
-    
+
     if (fit_prms->pwr0==NULL){
         fprintf(stderr, "COULD NOT ALLOCATE fit_prms->pwr0\n");
         return NULL;
@@ -97,9 +97,9 @@ FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
 
     rows = radar_prms->nrang * radar_prms->mplgs;
     columns = 2;
-    
+
     fit_prms->acfd = malloc(rows * sizeof(*fit_prms->acfd) + (rows * (columns * sizeof(**fit_prms->acfd))));
-    
+
     if (fit_prms->acfd==NULL){
         fprintf(stderr, "COULD NOT ALLOCATE fit_prms->acfd\n");
         return NULL;
@@ -107,12 +107,12 @@ FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
 
     fit_prms->acfd[0] = (double*)(fit_prms->acfd + rows);
     for(is=0;is<rows;is++){
-        fit_prms->acfd[is] = (double*)(fit_prms->acfd[0] + (is * columns)); 
+        fit_prms->acfd[is] = (double*)(fit_prms->acfd[0] + (is * columns));
     }
 
-    
+
     fit_prms->xcfd = malloc(rows * sizeof(*fit_prms->xcfd) + (rows * (columns * sizeof(**fit_prms->xcfd))));
-    
+
     if (fit_prms->xcfd==NULL){
         fprintf(stderr, "COULD NOT ALLOCATE fit_prms->xcfd\n");
         return NULL;
@@ -121,7 +121,7 @@ FITPRMS* Allocate_Fit_Prm(struct RadarParm *radar_prms){
 
     fit_prms->xcfd[0] = (double*)(fit_prms->xcfd + rows);
     for(is=0;is<rows;is++){
-        fit_prms->xcfd[is] = (double*)(fit_prms->xcfd[0] + (is * columns)); 
+        fit_prms->xcfd[is] = (double*)(fit_prms->xcfd[0] + (is * columns));
     }
 
     return fit_prms;
@@ -190,22 +190,54 @@ void Copy_Fitting_Prms(struct RadarSite *radar_site, struct RadarParm *radar_prm
 
 
 
-    for (i=0;i<fit_prms->nrang;i++) {
-        for (j=0;j<fit_prms->mplgs;j++) {
-            fit_prms->acfd[i*fit_prms->mplgs+j][0]=raw_data->acfd[0][i*fit_prms->mplgs+j];
-            fit_prms->acfd[i*fit_prms->mplgs+j][1]=raw_data->acfd[1][i*fit_prms->mplgs+j];
-        }
-    } 
 
-    if(*(raw_data->xcfd) != NULL){
+    if (raw_data->acfd != NULL){
+        if (*(raw_data->acfd) != NULL){
+            for (i=0;i<fit_prms->nrang;i++) {
+                for (j=0;j<fit_prms->mplgs;j++) {
+                    fit_prms->acfd[i*fit_prms->mplgs+j][0]=raw_data->acfd[0][i*fit_prms->mplgs+j];
+                    fit_prms->acfd[i*fit_prms->mplgs+j][1]=raw_data->acfd[1][i*fit_prms->mplgs+j];
+                }
+            }
+        }
+        else{/*If second pointer is NULL then fill with zeros*/
+            for (i=0;i<fit_prms->nrang;i++) {
+                for (j=0;j<fit_prms->mplgs;j++) {
+                    fit_prms->acfd[i*fit_prms->mplgs+j][0]=0;
+                    fit_prms->acfd[i*fit_prms->mplgs+j][1]=0;
+                }
+            }
+        }
+    }
+    else{ /*If first pointer is NULL then fill with zeros*/
         for (i=0;i<fit_prms->nrang;i++) {
             for (j=0;j<fit_prms->mplgs;j++) {
-                fit_prms->xcfd[i*fit_prms->mplgs+j][0]=raw_data->xcfd[0][i*fit_prms->mplgs+j];
-                fit_prms->xcfd[i*fit_prms->mplgs+j][1]=raw_data->xcfd[1][i*fit_prms->mplgs+j];
+                fit_prms->acfd[i*fit_prms->mplgs+j][0]=0;
+                fit_prms->acfd[i*fit_prms->mplgs+j][1]=0;
             }
-        } 
+        }
     }
-    else{
+
+
+    if (raw_data->xcfd != NULL){
+        if(*(raw_data->xcfd) != NULL){
+            for (i=0;i<fit_prms->nrang;i++) {
+                for (j=0;j<fit_prms->mplgs;j++) {
+                    fit_prms->xcfd[i*fit_prms->mplgs+j][0]=raw_data->xcfd[0][i*fit_prms->mplgs+j];
+                    fit_prms->xcfd[i*fit_prms->mplgs+j][1]=raw_data->xcfd[1][i*fit_prms->mplgs+j];
+                }
+            }
+        }
+        else{/*If second pointer is NULL then fill with zeros*/
+            for (i=0;i<fit_prms->nrang;i++) {
+                for (j=0;j<fit_prms->mplgs;j++) {
+                    fit_prms->xcfd[i*fit_prms->mplgs+j][0]=0;
+                    fit_prms->xcfd[i*fit_prms->mplgs+j][1]=0;
+                }
+            }
+        }
+    }
+    else{ /*If first pointer is NULL then fill with zeros*/
         for (i=0;i<fit_prms->nrang;i++) {
             for (j=0;j<fit_prms->mplgs;j++) {
                 fit_prms->xcfd[i*fit_prms->mplgs+j][0]=0;
@@ -213,7 +245,6 @@ void Copy_Fitting_Prms(struct RadarSite *radar_site, struct RadarParm *radar_prm
             }
         }
     }
-
 }
 
 /**
@@ -226,7 +257,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     fit_data->revision.major=MAJOR;
     fit_data->revision.minor=MINOR;
 
-    
+
     ranges = llist_create(NULL,range_node_eq,0);
     lags = llist_create(compare_lags,NULL,0);
 
@@ -237,53 +268,53 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     /*llist_for_each(lags,(node_func)print_lag_node);*/
 
     /*Here we determine the fluctuation level for which ACFs are pure noise*/
-    noise_pwr = ACF_cutoff_pwr(fit_prms); 		/*Set this to 1 for processing simulated data without the noise.*/ 
+    noise_pwr = ACF_cutoff_pwr(fit_prms); 		/*Set this to 1 for processing simulated data without the noise.*/
    /* noise_pwr = 1; */
 
     /*Here we fill the list of ranges with range nodes.*/
     Fill_Range_List(fit_prms, ranges);
 
     /*For each range we find the CRI of each pulse*/
-    llist_for_each_arg(ranges,(node_func_arg)Find_CRI,fit_prms,NULL);  	/*Comment this out for simulted data without CRI*/ 
+    llist_for_each_arg(ranges,(node_func_arg)Find_CRI,fit_prms,NULL);  	/*Comment this out for simulted data without CRI*/
 
     /*Now that we have CRI, we find alpha for each range*/
     llist_for_each_arg(ranges,(node_func_arg)Find_Alpha,lags,fit_prms);
 
     /*Each range node has its ACF power, ACF phase, and XCF phase(elevation) data lists filled*/
     llist_for_each_arg(ranges,(node_func_arg)Fill_Data_Lists_For_Range,lags,fit_prms);
-    
+
     /*llist_for_each(ranges,print_uncorrected_phase); */
     /* llist_for_each(ranges,print_range_node);*/
 
     /*Tx overlapped data is removed from consideration*/
-    Filter_TX_Overlap(ranges, lags, fit_prms); 	/*Comment this out for simulted data without TX overlap*/ 
-    /*llist_for_each(ranges,print_range_node);*/ 
+    Filter_TX_Overlap(ranges, lags, fit_prms); 	/*Comment this out for simulted data without TX overlap*/
+    /*llist_for_each(ranges,print_range_node);*/
     /*Criterion is applied to filter low power lags that are considered too close to
     statistical fluctuations*/
     llist_for_each_arg(ranges,(node_func_arg)Filter_Low_Pwr_Lags,fit_prms,NULL);
 
     /*Criterion is applied to filter ranges that hold no merit*/
-    Filter_Bad_ACFs(fit_prms,ranges,noise_pwr); 
-    
+    Filter_Bad_ACFs(fit_prms,ranges,noise_pwr);
+
     /*At this point all data is now processed and valuable so we perform power fits.
     The phase fitting stage is dependant on fitted power and must be done first*/
     llist_for_each(ranges,(node_func)Power_Fits);
-    
+
     /*We perform the phase fits for velocity and elevation. The ACF phase fit improves the
     fit of the XCF phase fit and must be done first*/
     ACF_Phase_Fit(ranges,fit_prms);
-    
+
     XCF_Phase_Fit(ranges,fit_prms);
 
     /*llist_for_each(ranges,print_range_node);*/
 
     /*Now the fits are completed, we can make our final determinations from those fits*/
     ACF_Determinations(ranges, fit_prms, fit_data, noise_pwr);
-    
+
     llist_destroy(lags,TRUE,free);
     llist_destroy(ranges,TRUE,free_range_node);
 
-    
+
 
     return 0;
 }
