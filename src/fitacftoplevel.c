@@ -138,7 +138,6 @@ void Copy_Fitting_Prms(struct RadarSite *radar_site, struct RadarParm *radar_prm
     int i, j, n;
 
 
-
     if (radar_prms->time.yr < 1993){
         fit_prms->old=1;
     }
@@ -268,7 +267,11 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     /*llist_for_each(lags,(node_func)print_lag_node);*/
 
     /*Here we determine the fluctuation level for which ACFs are pure noise*/
-    noise_pwr = ACF_cutoff_pwr(fit_prms); 		/*Set this to 1 for processing simulated data without the noise.*/
+
+    /*Set this to 1 for processing simulated data without the noise.*/
+    /*We check number of averages < 0 since this will cause invalid
+    division in the noise calculation*/
+    noise_pwr = (fit_prms->nave <= 0) ? 1.0 : ACF_cutoff_pwr(fit_prms);
    /* noise_pwr = 1; */
 
     /*Here we fill the list of ranges with range nodes.*/
