@@ -54,7 +54,7 @@ RANGENODE* new_range_node(int range, FITPRMS *fit_prms){
 }
 
 /**
-Initializes a new pwr node and returns a pointer to it. Returns a null 
+Initializes a new pwr node and returns a pointer to it. Returns a null
 pointer if the power at this node is below the fluctuation level.
 */
 PWRNODE* new_pwr_node(int range, double alpha_2, LAGNODE* lag, FITPRMS *fit_prms){
@@ -77,7 +77,7 @@ PWRNODE* new_pwr_node(int range, double alpha_2, LAGNODE* lag, FITPRMS *fit_prms
 
 	new_pwr_node->lag_idx = lag->lag_idx;
 	new_pwr_node->ln_pwr = log(R);
-	new_pwr_node->sigma = fit_prms->pwr0[range] * sqrt((R_norm_2 + inverse_alpha_2)/(2 * fit_prms->nave)); 
+	new_pwr_node->sigma = fit_prms->pwr0[range] * sqrt((R_norm_2 + inverse_alpha_2)/(2 * fit_prms->nave));
 	new_pwr_node->t = lag->lag_num * fit_prms->mpinc * 1.0e-6;
 
 	return new_pwr_node;
@@ -124,7 +124,7 @@ PHASENODE* new_elev_node(int range, double alpha_2, LAGNODE* lag, FITPRMS *fit_p
 
 		new_elev_node->lag_idx = lag->lag_idx;
 		new_elev_node->phi = atan2(imag,real);
-		
+
 		/*This is merely a placeholder for alpha right now. This gets changed in the
 		later calculation of sigma after the power fit */
 		new_elev_node->sigma = alpha_2;
@@ -179,7 +179,7 @@ void free_range_node(llist_node range){
 
 	if(range_node->q_pwr_fit_err != NULL){
 		free_fit_data(range_node->q_pwr_fit_err);
-	}	
+	}
 
 	if(range_node->phase_fit != NULL){
 		free_fit_data(range_node->phase_fit);
@@ -218,7 +218,7 @@ int dbl_cmp(const void *x,const void *y) {
 }
 
 /**
-Callback used to compare two lags 
+Callback used to compare two lags
 */
 int compare_lags(llist_node first,llist_node second){
 	LAGNODE* lag1;
@@ -273,6 +273,21 @@ int compare_doubles(llist_node first,llist_node second){
 		return -1;
 	}
 	else if(*(double*)(first) < *(double*)(second)){
+		return 0;
+	}
+	else{
+		return 1;
+	}
+}
+
+/**
+Callback used to compares ints within a list
+*/
+int compare_ints(llist_node first,llist_node second){
+	if(*(int*)(first) < *(int*)(second)){
+		return -1;
+	}
+	else if(*(int*)(first) < *(int*)(second)){
 		return 0;
 	}
 	else{
@@ -391,7 +406,7 @@ void print_range_node(llist_node node){
 	print_fit_data(((RANGENODE*)node)->elev_fit,fp);
 	llist_for_each_arg(((RANGENODE*)node)->elev, (node_func_arg)print_phase_node,fp,NULL);
 	fclose(fp);
-	
+
 }
 
 void print_uncorrected_phase(llist_node node){
@@ -445,39 +460,66 @@ void calculate_alpha_at_lags(llist_node lag, llist_node range, double* lag_0_pwr
 This function finds the bad samples that are blacked out by TX overlap
 */
 void mark_bad_samples(FITPRMS *fit_prms, llist bad_samples){
-	int i, sample;
+	int i,j, sample;
 	long ts, t1=0, t2=0;
-	int* bad_sample;
+	int *bad_sample, *pulse_us;
+	int offset, channel;
+	llist pulses_in_us, pulses_stereo;
 	i = -1;
 	ts = (long) fit_prms->lagfr;
+	offset = fit_prms->offset;
+	channel = fit_prms->channel;
 	sample = 0;
 
 	t2 = 0L;
 
+	pulses_in_us = llist_create(compare_ints,sample_node_eq,0);
+	pulses_stereo = llist_create(compare_ints,sample_node_eq,0);
 
-	while (i < (fit_prms->mppul - 1)) {
-	/* first, skip over any pulses that occur before the first sample
-	   defines transmitter pulse blanket window*/
+	for(j=0; j<fit_prms->mppul; j++){
+		pulse_us = malloc(sizeof(int));
+		*pulse_us = fit_prms->pulse[j] * fit_prms->mpinc;
+		if(llist_add_node(pulses_in_us,(llist_node)pulse_us,0) != LLIST_SUCCESS){
+			fprintf(stderr,"pulses_in_us list node failed to add in mark_bad_samples\n");
+		};
+	}
 
-		while ((ts > t2) && (i < (fit_prms->mppul - 1))) {
-			i++;
-			t1 = (long) (fit_prms->pulse[i]) * (long) (fit_prms->mpinc)
-			- fit_prms->txpl/2;
-	  		t2 = t1 + 3*fit_prms->txpl/2 + 100; /* adjust for rx-on delay */
-		}	
+	if((offset != 0) && ((channel == 1) || (channel == 2))) {
 
-	/*	we now have a pulse that occurs after the current sample.  Start
-		incrementing the sample number until we find a sample that lies
-		within the pulse */
+		for(j=0; j< fit_prms->mppul;j++){
+			pulse_us = malloc(sizeof(int));
+			if (channel == 1) {
+				*pulse_us = fit_prms->pulse[j] * fit_prms->mpinc - offset;
+			}
+			else {
+				*pulse_us = fit_prms->pulse[j] * fit_prms->mpinc + offset;
+			}
+			if(llist_add_node(pulses_stereo,(llist_node)pulse_us,0) != LLIST_SUCCESS){
+				fprintf(stderr,"pulses_stereo list node failed to add in mark_bad_samples\n");
+			};
+		}
+
+		if(llist_concat(pulses_in_us,pulses_stereo) != LLIST_SUCCESS) {
+			fprintf(stderr,"unable to concatenate lists in mark_bad_samples\n");
+		}
+		if(llist_sort(pulses_in_us,SORT_LIST_ASCENDING) != LLIST_SUCCESS) {
+			fprintf(stderr,"unable to sort list in mark_bad_samples\n");
+		}
+
+	}
+
+	llist_reset_iter(pulses_in_us);
+
+	do{
+		llist_get_iter(pulses_in_us,(void**)&pulse_us);
+		t1 = *pulse_us - fit_prms->txpl/2;
+		t2 = t1 + 3.0 * fit_prms->txpl/2 + 100;
 
 		while (ts < t1) {
 			sample++;
 			ts = ts + fit_prms->smsep;
 		}
 
-	/*	ok, we now have a sample which occurs after the pulse starts.
-		check to see if it occurs before the pulse ends, and if so, mark
-		it as a bad sample */
 		while ((ts >= t1) && (ts <= t2)) {
 			bad_sample = malloc(sizeof(int));
 			*bad_sample = sample;
@@ -487,7 +529,50 @@ void mark_bad_samples(FITPRMS *fit_prms, llist bad_samples){
 			sample++;
 			ts = ts + fit_prms->smsep;
 		}
-	}
+
+	}while(llist_go_next(pulses_in_us) != LLIST_END_OF_LIST);
+
+	llist_destroy(pulses_in_us,true,free);
+	llist_destroy(pulses_stereo,true,free);
+
+
+
+
+
+
+	/*while (i < (fit_prms->mppul - 1)) {*/
+	/* first, skip over any pulses that occur before the first sample
+	   defines transmitter pulse blanket window*/
+
+		/*while ((ts > t2) && (i < (fit_prms->mppul - 1))) {
+			i++;
+			t1 = (long) (fit_prms->pulse[i]) * (long) (fit_prms->mpinc)
+			- fit_prms->txpl/2;
+	  		t2 = t1 + 3*fit_prms->txpl/2 + 100;*/ /* adjust for rx-on delay */
+		/*}*/
+
+	/*	we now have a pulse that occurs after the current sample.  Start
+		incrementing the sample number until we find a sample that lies
+		within the pulse */
+
+/*		while (ts < t1) {
+			sample++;
+			ts = ts + fit_prms->smsep;
+		}*/
+
+	/*	ok, we now have a sample which occurs after the pulse starts.
+		check to see if it occurs before the pulse ends, and if so, mark
+		it as a bad sample */
+/*		while ((ts >= t1) && (ts <= t2)) {
+			bad_sample = malloc(sizeof(int));
+			*bad_sample = sample;
+			if(llist_add_node(bad_samples,(llist_node)bad_sample,0) != LLIST_SUCCESS){
+				fprintf(stderr,"list node failed to add in Mark_Bad_Samples\n");
+			};
+			sample++;
+			ts = ts + fit_prms->smsep;
+		}
+	}*/
 }
 
 /**
@@ -545,7 +630,7 @@ void phase_correction(llist_node phase, double* slope_est){
 }
 
 /**
-Correction of the noise level which is underestimated 
+Correction of the noise level which is underestimated
 by using the 10 lowest values of lag0 power.
 */
 
@@ -556,9 +641,10 @@ double cutoff_power_correction(FITPRMS *fit_prms){
   double pdf;			/* PDF */
   double cpdf=0;		/* Cumulative PDF value*/
   double cpdfx=0;		/* Cumulative value of PDF*x -- needed for calcualting the mean */
-  
-  double s=1./sqrt(fit_prms->nave); /* Model standard deviation */   
-  
+  double s;
+
+  s=1./sqrt(fit_prms->nave); /* Model standard deviation */
+
   while(cpdf < 10./fit_prms->nrang){
     x=i/1000.;
     pdf=exp(-((x-1.)*(x-1.)/(2.*s*s)))/s/sqrt(2*M_PI)/1000.;	/* Normalised Gaussian distribution centered at 1 */
@@ -566,10 +652,10 @@ double cutoff_power_correction(FITPRMS *fit_prms){
     cpdfx=cpdfx+pdf*x;
     i++;
   }
-  
+
   corr=1./(cpdfx/cpdf);		/* Correcting factor as the inverse of a normalised mean */
   return corr;
-  
+
 }
 
 /**
@@ -589,8 +675,8 @@ double ACF_cutoff_pwr(FITPRMS *fit_prms){
         return -1.0;
     }
 
-    /* Determine the lag_0 noise level (0 dB reference) and the noise level at 
-     which fit_acf is to quit (average power in the 
+    /* Determine the lag_0 noise level (0 dB reference) and the noise level at
+     which fit_acf is to quit (average power in the
      fluctuations of the acfs which are pure noise) */
 
     for (i=0; i < fit_prms->nrang; i++) {
@@ -600,21 +686,21 @@ double ACF_cutoff_pwr(FITPRMS *fit_prms){
 
     qsort(pwr_levels, fit_prms->nrang, sizeof(double), dbl_cmp);
     /* determine the average lag0 power of the 10 lowest power acfs */
-    
-    
+
+
     i=0;
 
-    
-    /*  look for the lowest 10 values of lag0 power and average to 
+
+    /*  look for the lowest 10 values of lag0 power and average to
             get the noise level.  Ignore values that are exactly 0.  If
             you can't find 10 useable values within the first 1/3 of the
-            sorted power list, then just use whatever you got in that 
+            sorted power list, then just use whatever you got in that
             first 1/3.  If you didn't get any useable values, then use
             the NOISE parameter */
-        
+
     while ((ni < 10) && (i < fit_prms->nrang/3)) {
         if (pwr_levels[i]) ++ni;
-        min_pwr += pwr_levels[i++];  
+        min_pwr += pwr_levels[i++];
     }
 
     ni = (ni > 0) ? ni :  1;
@@ -641,11 +727,16 @@ void Filter_Bad_ACFs(FITPRMS *fit_prms, llist ranges, double noise_pwr){
 	RANGENODE* range_node;
 	double cutoff_pwr;
 
+	/*Nothing to filter here*/
+	if ((llist_size(ranges) == 0) || (fit_prms->nave <= 0)){
+		return;
+	}
+
 
 	cutoff_pwr = ACF_SNR_CUTOFF * noise_pwr * (1 + 1/sqrt(fit_prms->nave));
 
 	llist_reset_iter(ranges);
-	
+
 
 	for(i=0;i<fit_prms->nrang;i++){
 		llist_get_iter(ranges,(void**)&range_node);
@@ -684,7 +775,7 @@ void Fill_Range_List(FITPRMS *fit_prms, llist ranges){
 
 /**
 Prunes off low power lags determined by cutoff criteria. Once a
-cutoff lag is determined, all subsequent lags in the list are 
+cutoff lag is determined, all subsequent lags in the list are
 removed.
 */
 void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms){
@@ -693,17 +784,22 @@ void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms){
 	PWRNODE* pwr_node = NULL;
 	RANGENODE* range_node = NULL;
 	int cutoff_lag = 0;
-	
-	cutoff_lag = fit_prms->mplgs + 1;
 
 	range_node = (RANGENODE*) range;
 
-	/*Cutoff fluctuation level for filtering*/
-	log_sigma_fluc =  log(FLUCTUATION_CUTOFF_COEFF * fit_prms->pwr0[range_node->range]/sqrt(2 * fit_prms->nave));
-	
-	if (llist_size(range_node->pwrs) == 0){
+	/*Nothing to filter here*/
+	if ((llist_size(range_node->pwrs) == 0) || (fit_prms->nave <= 0)){
 		return;
 	}
+
+	cutoff_lag = fit_prms->mplgs + 1;
+
+
+
+	/*Cutoff fluctuation level for filtering*/
+	log_sigma_fluc =  log(FLUCTUATION_CUTOFF_COEFF * fit_prms->pwr0[range_node->range]/sqrt(2 * fit_prms->nave));
+
+
 
 	llist_reset_iter(range_node->pwrs);
 	llist_reset_iter(range_node->alpha_2);
@@ -760,15 +856,15 @@ void Find_CRI(llist_node node,FITPRMS *fit_prms){
 			range_to_check = diff_pulse * tau + range_node->range;
 
 			if ((pulse != pulse_to_check) &&
-				(0 <= range_to_check) && 
+				(0 <= range_to_check) &&
 				(range_to_check < fit_prms->nrang)) {
 					total_cri += fit_prms->pwr0[range_to_check];
 			}
-		} 
+		}
 
 		range_node->CRI[pulse_to_check] = total_cri;
-	}           
-  
+	}
+
 }
 
 
@@ -815,7 +911,7 @@ void ACF_Phase_Unwrap(llist_node range){
 
 	llist_get_iter(range_node->phases, (void**)&phase_curr);
 
-	/*First iteration to achieve a slope estimate using a weighted 
+	/*First iteration to achieve a slope estimate using a weighted
 	average of the slope between adjacent phases*/
 	while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST){
 		phase_prev = phase_curr;
@@ -863,8 +959,8 @@ void ACF_Phase_Unwrap(llist_node range){
 }
 
 /**
-This function unwraps the phase for the XCF.We only need one round of improving the 
-unwrap because we are using the fitted slope of the acf phase as our initial phase 
+This function unwraps the phase for the XCF.We only need one round of improving the
+unwrap because we are using the fitted slope of the acf phase as our initial phase
 unwrapping guess.
 */
 void XCF_Phase_Unwrap(llist_node range){
