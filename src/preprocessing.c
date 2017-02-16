@@ -733,8 +733,8 @@ void Filter_Bad_ACFs(FITPRMS *fit_prms, llist ranges, double noise_pwr){
 	}
 
 
-	cutoff_pwr = ACF_SNR_CUTOFF * noise_pwr * (1 + 1/sqrt(fit_prms->nave));
-
+	cutoff_pwr = noise_pwr * (1. + 3./sqrt(fit_prms->nave));
+	/*Removing low-power ACFs from the analysis by using an upper three-sigma level of the model noise distribution*/
 	llist_reset_iter(ranges);
 
 
