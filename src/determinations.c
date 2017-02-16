@@ -422,7 +422,7 @@ void find_elevation(llist_node range, struct FitElv* fit_elev_array, FITPRMS* fi
 		elevation = asin(sqrt(theta));
 	}
 
-	fit_elev_array[range_node->range].normal = 180/M_PI * (elevation + elev_corr);
+	fit_elev_array[range_node->range].high = 180/M_PI * (elevation + elev_corr);
 
 	/*Elevation errors*/
 	psi_k2d2 = psi/(wave_num * wave_num * antenna_sep * antenna_sep);
@@ -449,7 +449,7 @@ void find_elevation(llist_node range, struct FitElv* fit_elev_array, FITPRMS* fi
 	else{
 		elevation = asin(sqrt(theta));
 	}
-	fit_elev_array[range_node->range].high = 180/M_PI * (elevation + elev_corr);
+	fit_elev_array[range_node->range].normal = 180/M_PI * (elevation + elev_corr);
 
 }
 
