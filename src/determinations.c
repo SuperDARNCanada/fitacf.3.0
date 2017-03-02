@@ -69,7 +69,7 @@ void allocate_fit_data(struct FitData* fit_data, FITPRMS* fit_prms){
    	else{
 		memset(fit_data->elv,0,sizeof(struct FitElv) * fit_prms->nrang);
    	}
-   	
+
 }
 
 /**
@@ -93,7 +93,7 @@ void ACF_Determinations(llist ranges, FITPRMS* fit_prms,struct FitData* fit_data
    	llist_for_each_arg(ranges,(node_func_arg)set_xcf_phi0_err,fit_data->xrng,NULL);
 
 #ifdef _RFC_IDX
-   	
+
    	llist_for_each_arg(ranges,(node_func_arg)refractive_index,fit_data->elv,NULL);
 #endif
 
@@ -458,11 +458,19 @@ Sets the fitted phase offset for the XCF
 */
 void set_xcf_phi0(llist_node range, struct FitRange* fit_range_array, FITPRMS* fit_prms){
 	RANGENODE* range_node;
+    double real, imag;
 
 	range_node = (RANGENODE*) range;
 
-	fit_range_array[range_node->range].phi0 = range_node->elev_fit->a;
-	
+	//fit_range_array[range_node->range].phi0 = range_node->elev_fit->a;
+
+    real = fit_prms->xcfd[range_node->range * fit_prms->mplgs][0];
+    imag = fit_prms->xcfd[range_node->range * fit_prms->mplgs][1];
+
+    fit_range_array[range_node->range].phi0 = atan2(imag,real);
+
+
+
 }
 
 /**
