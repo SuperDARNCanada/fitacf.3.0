@@ -89,7 +89,7 @@ void ACF_Determinations(llist ranges, FITPRMS* fit_prms,struct FitData* fit_data
    	lag_0_pwr_in_dB(fit_data->rng,fit_prms,noise_pwr);
 
    	llist_for_each_arg(ranges,(node_func_arg)find_elevation,fit_data->elv,fit_prms);
-   	llist_for_each_arg(ranges,(node_func_arg)set_xcf_phi0,fit_data->xrng,NULL);
+   	llist_for_each_arg(ranges,(node_func_arg)set_xcf_phi0,fit_data->xrng,fit_prms);
    	llist_for_each_arg(ranges,(node_func_arg)set_xcf_phi0_err,fit_data->xrng,NULL);
 
 #ifdef _RFC_IDX
