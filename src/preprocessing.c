@@ -933,7 +933,7 @@ void ACF_Phase_Unwrap(llist_node range){
 	for (i=0; i<llist_size(range_node->phases) - 1; i++) {
 		d_phi = local_copy[i+1].phi - local_copy[i].phi;
 		sigma_bar = (local_copy[i+1].sigma + local_copy[i].sigma)/2;
-		d_tau = local_copy[i+1].t = local_copy[i].t;
+		d_tau = local_copy[i+1].t - local_copy[i].t;
 
 		if(fabs(d_phi) < M_PI){
 			slope_num += d_phi/(sigma_bar * sigma_bar)/d_tau;
