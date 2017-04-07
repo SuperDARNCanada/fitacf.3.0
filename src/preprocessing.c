@@ -614,18 +614,20 @@ Helper callback function which performs the phase correction by determining
 how many 2*PI corrections need to be added to each phase value using the
 slope estimate.
 */
-void phase_correction(llist_node phase, double* slope_est){
+void phase_correction(PHASENODE* phase, double slope_est, int* total_2pi_corrections ){
 	PHASENODE* phase_node;
 	double phi_pred;
 	double phi_corr;
 
 	phase_node = (PHASENODE*) phase;
 
-	phi_pred = *slope_est * phase_node->t;
+	phi_pred = slope_est * phase_node->t;
 
 	phi_corr = round((phi_pred - phase_node->phi)/(2 * M_PI));
 
 	phase_node->phi += phi_corr * 2 * M_PI;
+
+	*total_2pi_corrections += abs(phi_corr);
 
 }
 
@@ -900,28 +902,38 @@ void ACF_Phase_Unwrap(llist_node range){
 	RANGENODE* range_node;
 	PHASENODE* phase_curr;
 	PHASENODE* phase_prev;
+	PHASENODE* local_copy;
 
 	double d_phi,sigma_bar,d_tau;
-	double slope_est = 0.0 ,slope_denom = 0.0,slope_num = 0.0;
-	double S_xy, S_xx;
+	double slope_est = 0.0 ,slope_denom = 0.0,slope_num = 0.0, slope_err = 0.0;
+	double uncorr_slope_est, uncorr_slope_err;
+	int total_2pi_corrections = 0;
+	double S_xy = 0.0, S_xx = 0.0;
+	int i = 0;
 
 	range_node = (RANGENODE*) range;
 
+
+	/*Because our list of phases has been filtered, we can use a local copy in an array
+	 for simple sequential access. The list is used in the first place for easy removal
+	 without the need of array masking. This local copy will be used to test if unwrap is
+	 needed in the first place*/
+	local_copy = malloc(sizeof(PHASENODE) * llist_size(range_node->phases));
+
+	/*Copy phase into local copy*/
 	llist_reset_iter(range_node->phases);
+	do{
 
-	llist_get_iter(range_node->phases, (void**)&phase_curr);
-
-	/*First iteration to achieve a slope estimate using a weighted
-	average of the slope between adjacent phases*/
-	while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST){
-		phase_prev = phase_curr;
 		llist_get_iter(range_node->phases, (void**)&phase_curr);
+		local_copy[i++] = *phase_curr;
 
-		d_phi = phase_curr->phi - phase_prev->phi;
+	}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
 
-		sigma_bar = (phase_curr->sigma + phase_prev->sigma)/2;
 
-		d_tau = phase_curr->t - phase_prev->t;
+	for (i=0; i<llist_size(range_node->phases) - 1; i++) {
+		d_phi = local_copy[i+1].phi - local_copy[i].phi;
+		sigma_bar = (local_copy[i+1].sigma + local_copy[i].sigma)/2;
+		d_tau = local_copy[i+1].t - local_copy[i].t;
 
 		if(fabs(d_phi) < M_PI){
 			slope_num += d_phi/(sigma_bar * sigma_bar)/d_tau;
@@ -932,29 +944,79 @@ void ACF_Phase_Unwrap(llist_node range){
 
 	slope_est = slope_num / slope_denom;
 
-	llist_for_each_arg(range_node->phases,(node_func_arg)phase_correction,&slope_est,NULL);
 
-	llist_reset_iter(range_node->phases);
-	S_xx = 0;
-	S_xy = 0;
+	for (i=0; i<llist_size(range_node->phases) - 1; i++) {
+		phase_correction(&local_copy[i], slope_est, &total_2pi_corrections);
+	}
 
-	/*Second iteration to improve slope estimate by quickly fitting to first round unwrap*/
-	do{
+	/*We determine whether wrapped or unwrapped phase has better error on fit. Select
+	 the lower of two.*/
+	if (total_2pi_corrections > 0){
 
-		llist_get_iter(range_node->phases, (void**)&phase_curr);
-		if(phase_curr->sigma > 0){
-			S_xy += (phase_curr->phi * phase_curr->t)/(phase_curr->sigma * phase_curr->sigma);
-
-			S_xx += (phase_curr->t * phase_curr->t)/(phase_curr->sigma * phase_curr->sigma);
+		/*Quickly fit unwrapped phase for slope and err. Needed to compare error*/
+		S_xx = 0.0;
+		S_xy = 0.0;
+		for (i=0; i<llist_size(range_node->phases); i++){
+			if(local_copy[i].sigma > 0){
+				S_xy += (local_copy[i].phi * local_copy[i].t)/
+							(local_copy[i].sigma * local_copy[i].sigma);
+				S_xx += (local_copy[i].t * local_copy[i].t)/
+							(local_copy[i].sigma * local_copy[i].sigma);
+			}
 		}
 
-	}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
+		slope_est = S_xy / S_xx;
+		for (i=0; i<llist_size(range_node->phases); i++){
+			if(local_copy[i].sigma > 0){
+				slope_err += ((slope_est * local_copy[i].t - local_copy[i].phi) *
+										(slope_est * local_copy[i].t - local_copy[i].phi)) /
+										(local_copy[i].sigma * local_copy[i].sigma);
+			}
+		}
 
+		/*Quick fit of original phase*/
+		llist_reset_iter(range_node->phases);
+		S_xx = 0.0;
+		S_xy = 0.0;
+		do{
 
-	 slope_est = S_xy / S_xx;
+			llist_get_iter(range_node->phases, (void**)&phase_curr);
+			if(phase_curr->sigma > 0){
+				S_xy += (phase_curr->phi * phase_curr->t)/(phase_curr->sigma * phase_curr->sigma);
+				S_xx += (phase_curr->t * phase_curr->t)/(phase_curr->sigma * phase_curr->sigma);
+			}
 
+		}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
 
-	llist_for_each_arg(range_node->phases,(node_func_arg)phase_correction,&slope_est,NULL);
+		uncorr_slope_est = S_xy / S_xx;
+
+		llist_reset_iter(range_node->phases);
+		do{
+
+			llist_get_iter(range_node->phases, (void**)&phase_curr);
+			if(phase_curr->sigma > 0){
+				uncorr_slope_err += ((uncorr_slope_est * phase_curr->t - phase_curr->phi) *
+								(uncorr_slope_est * phase_curr->t - phase_curr->phi)) /
+								(phase_curr->sigma * phase_curr->sigma);
+			}
+
+		}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
+
+		/*If the error on the original phase is worse, copy over local copy*/
+		if (uncorr_slope_err > slope_err) {
+			i=0;
+			llist_reset_iter(range_node->phases);
+			do{
+
+				llist_get_iter(range_node->phases, (void**)&phase_curr);
+				*phase_curr = local_copy[i++];
+
+			}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
+
+		}
+
+	}
+
 
 }
 
@@ -967,10 +1029,11 @@ void XCF_Phase_Unwrap(llist_node range){
 	RANGENODE* range_node;
 	PHASENODE* phase_curr;
 	double S_xy, S_xx,slope_est;
-
+	int total_2pi_corrections = 0;
 	range_node = (RANGENODE*) range;
 
-	llist_for_each_arg(range_node->elev,(node_func_arg)phase_correction,&range_node->phase_fit->b,NULL);
+	llist_for_each_arg(range_node->elev,(node_func_arg)phase_correction,&range_node->phase_fit->b,
+						&total_2pi_corrections);
 
 	llist_reset_iter(range_node->elev);
 	S_xx = 0;
@@ -990,9 +1053,9 @@ void XCF_Phase_Unwrap(llist_node range){
 	}while(llist_go_next(range_node->elev) != LLIST_END_OF_LIST);
 
 
-	 slope_est = S_xy / S_xx;
+	slope_est = S_xy / S_xx;
 
-	llist_for_each_arg(range_node->elev,(node_func_arg)phase_correction,&slope_est,NULL);
+	llist_for_each_arg(range_node->elev,(node_func_arg)phase_correction,&slope_est,&total_2pi_corrections);
 }
 
 
