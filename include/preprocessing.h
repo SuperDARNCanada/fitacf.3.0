@@ -29,7 +29,7 @@ July 2015
 #include "leastsquares.h"
 #include "fit_structures.h"
 
-#define MIN_LAGS 5
+#define MIN_LAGS 3
 #define ALPHA_CUTOFF 2
 #define NOISE_SIGMA_THRESHOLD 3.0
 #define FLUCTUATION_CUTOFF_COEFF 2
