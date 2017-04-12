@@ -169,6 +169,14 @@ void Copy_Fitting_Prms(struct RadarSite *radar_site, struct RadarParm *radar_prm
     fit_prms->cp=radar_prms->cp;
     fit_prms->channel=radar_prms->channel;
     fit_prms->offset=radar_prms->offset;  /* stereo offset */
+    fit_prms->time.yr = radar_prms->time.yr;
+    fit_prms->time.mo = radar_prms->time.mo;
+    fit_prms->time.dy = radar_prms->time.dy;
+    fit_prms->time.hr = radar_prms->time.hr;
+    fit_prms->time.mt = radar_prms->time.mt;
+    fit_prms->time.sc = radar_prms->time.sc;
+    fit_prms->time.us = radar_prms->time.us;
+
 
 
 
@@ -264,7 +272,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     in the raw data
     */
     Determine_Lags(lags,fit_prms);
-    /*llist_for_each(lags,(node_func)print_lag_node);*/
+    /*llist_for_each_arg(lags,(node_func_arg)print_lag_node, fit_prms, NULL);*/
 
     /*Here we determine the fluctuation level for which ACFs are pure noise*/
 
@@ -286,12 +294,12 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
     /*Each range node has its ACF power, ACF phase, and XCF phase(elevation) data lists filled*/
     llist_for_each_arg(ranges,(node_func_arg)Fill_Data_Lists_For_Range,lags,fit_prms);
 
-    /*llist_for_each(ranges,print_uncorrected_phase); */
+    /*llist_for_each_arg(ranges,(node_func_arg)print_uncorrected_phase,fit_prms, NULL);*/
     /* llist_for_each(ranges,print_range_node);*/
 
     /*Tx overlapped data is removed from consideration*/
     Filter_TX_Overlap(ranges, lags, fit_prms); 	/*Comment this out for simulted data without TX overlap*/
-    /*llist_for_each(ranges,print_range_node);*/
+    /*llist_for_each_arg(ranges,(node_func_arg)print_range_node,fit_prms,NULL);*/
     /*Criterion is applied to filter low power lags that are considered too close to
     statistical fluctuations*/
     llist_for_each_arg(ranges,(node_func_arg)Filter_Low_Pwr_Lags,fit_prms,NULL);
@@ -309,7 +317,7 @@ int FitACF(FITPRMS *fit_prms, struct FitData *fit_data) {
 
     XCF_Phase_Fit(ranges,fit_prms);
 
-    /*llist_for_each(ranges,print_range_node);*/
+    /*llist_for_each_arg(ranges,(node_func_arg)print_range_node,fit_prms,NULL);*/
 
     /*Now the fits are completed, we can make our final determinations from those fits*/
     ACF_Determinations(ranges, fit_prms, fit_data, noise_pwr);

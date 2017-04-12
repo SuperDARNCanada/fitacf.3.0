@@ -1,17 +1,17 @@
 # fitacf.3.0
 The repo for the new and improved fitacf routine
 
-##Building the project
+## Building the project
 Requires a version of RST to be set up with correct environment variables. Aftering running `make` in the project directory, a version of make_fit will be placed in a bin directory within the project folder.
 
-##Details
+## Details
 
 fitacf.3.0 is a complete rewrite of the ACF fitting routine using in the RST software package. fitacf.3.0 attempts to improve on many aspects of the current version, fitacf.2.7 both in terms of algorithm correctness, and software design.
 
-###Algorithm description
+### Algorithm description
 TODO
 
-###Software design
+### Software design
 
 fitacf.3.0 was designed to be easy to read,easy to test, and easy to modify. In contrast to the older versions, variables and function names, and files are more self descriptive so that it is easier to locate things and understand the code. Data is now better [encapsulated](https://en.wikipedia.org/wiki/Encapsulation_(computer_programming)) so that it is clear what is being operated on at all times. And because data follows a better encapsulation scheme, it means that functions can be designed with greatly reduced [coupling](https://en.wikipedia.org/wiki/Coupling_(computer_programming)) compared to the older versions.
 
@@ -49,7 +49,7 @@ The fitting routine uses the exact algorithms for 1 or 2 parameter straight line
 
 In the echo parameter determination stage, the fitted values are then used to determine values for things such as velocity, elevation, power, and spectral width with their respective errors. These parameters are then written out to a file.
 
-###Testing
+### Testing
 There are no designed unit tests to fitacf.3.0, but there are functions that can be used to log almost every data structure to a file so that you can follow along with what is happening in more detail. To use this, just call these print functions where you want, or pass as a callback to `llist_for_each` to log details of each node in a list. Samples of this are commented out in the top level. The testing code supplied was used in an earlier version of development until Pasha took over testing using his own tools. I will bring this code up to the current version of development as its still useful for testing individual pieces of fitacf.3.0.
 
 You can also change the -g option in the makefile to -O3 for massive speed increases. -g just allows for stepping through the debugger.

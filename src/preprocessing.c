@@ -357,11 +357,20 @@ void print_alpha_node(llist_node node, FILE* fp){
 	fprintf(fp,"%f ",alpha_2->alpha_2);
 }
 
-void print_lag_node(llist_node node){
+void print_lag_node(llist_node node,FITPRMS* fit_prms){
 	LAGNODE* lag;
 	lag = (LAGNODE*)(node);
-	printf("lag %d %d %d %d %d %d\n",lag->lag_idx,lag->lag_num,lag->pulses[0],
+	FILE* fp;
+
+	fp = fopen("lags.txt","a");
+	fprintf(fp,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
+													fit_prms->time.dy, fit_prms->time.hr,
+													fit_prms->time.mt, fit_prms->time.sc +
+													fit_prms->time.us/1.0e6);
+	fprintf(fp,"BEAM %02d\n",fit_prms->bmnum);
+	fprintf(fp, "lag %d %d %d %d %d %d\n",lag->lag_idx,lag->lag_num,lag->pulses[0],
 		lag->pulses[1],lag->sample_base1,lag->sample_base2);
+	fclose(fp);
 
 }
 
@@ -379,12 +388,17 @@ void print_phase_node(llist_node node, FILE* fp){
 
 }
 
-void print_range_node(llist_node node){
+void print_range_node(llist_node node,FITPRMS* fit_prms){
 	int i;
 	FILE* fp;
 
 	fp = fopen("fullrangeinfo.txt","a");
-	fprintf(fp,"range %d\n",((RANGENODE*)node)->range);
+	fprintf(fp,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
+													fit_prms->time.dy, fit_prms->time.hr,
+													fit_prms->time.mt, fit_prms->time.sc +
+													fit_prms->time.us/1.0e6);
+	fprintf(fp,"BEAM %02d\n",fit_prms->bmnum);
+	fprintf(fp,"RANGE %d\n",((RANGENODE*)node)->range);
 
 	fprintf(fp,"CRI ");
 	for(i=0;i<8;i++){
@@ -409,18 +423,24 @@ void print_range_node(llist_node node){
 
 }
 
-void print_uncorrected_phase(llist_node node){
-  llist_for_each(((RANGENODE*)node)->phases, (node_func)print_phase_node_to_file);
+void print_uncorrected_phase(llist_node node, FITPRMS* fit_prms){
+	FILE* fp;
+
+	fp = fopen("phases.txt","a");
+	fprintf(fp,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
+													fit_prms->time.dy, fit_prms->time.hr,
+													fit_prms->time.mt, fit_prms->time.sc +
+													fit_prms->time.us/1.0e6);
+	fprintf(fp,"BEAM %02d\n",fit_prms->bmnum);
+	fprintf(fp,"RANGE %d\n",((RANGENODE*)node)->range);
+  	llist_for_each_arg(((RANGENODE*)node)->phases, (node_func_arg)print_phase_node_to_file,fp, NULL);
+  	fclose(fp);
 }
 
-void print_phase_node_to_file(llist_node node){
+void print_phase_node_to_file(llist_node node, FILE* fp){
 	PHASENODE* phi;
-	FILE *fp;
 	phi = (PHASENODE*)(node);
-	fp = fopen("phases.txt","a");
 	fprintf(fp,"%f\n",phi->phi);
-	fclose(fp);
-
 }
 
 
