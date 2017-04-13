@@ -75,7 +75,7 @@ void Filter_Bad_ACFs(FITPRMS *fit_prms, llist good_ranges, double noise_pwr);
 void Find_CRI(llist_node node,FITPRMS *fit_prms);
 void Find_Alpha(llist_node range,llist lags,FITPRMS *fit_prms);
 void Fill_Data_Lists_For_Range(llist_node range,llist lags,FITPRMS *fit_prms);
-void ACF_Phase_Unwrap(llist_node range);
+void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms);
 void XCF_Phase_Unwrap(llist_node range);
 void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms);
 void Filter_TX_Overlap(llist ranges, llist lags, FITPRMS *fit_prms);

@@ -918,7 +918,7 @@ void Find_Alpha(llist_node range,llist lags, FITPRMS *fit_prms){
 For a given range, this function performs a 2 interation process to unwrap
 the phase for fitting.
 */
-void ACF_Phase_Unwrap(llist_node range){
+void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 	RANGENODE* range_node;
 	PHASENODE* phase_curr;
 	PHASENODE* phase_prev;
@@ -1021,6 +1021,15 @@ void ACF_Phase_Unwrap(llist_node range){
 			}
 
 		}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
+
+		fprintf(stderr,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
+													fit_prms->time.dy, fit_prms->time.hr,
+													fit_prms->time.mt, fit_prms->time.sc +
+													fit_prms->time.us/1.0e6);
+		fprintf(stderr,"BEAM %02d\n",fit_prms->bmnum);
+		fprintf(stderr,"RANGE %02d\n",range_node->range);
+		fprintf(stderr,"CORRECTED_SLOPE_ERR %f\n",slope_err);
+		fprintf(stderr,"UNCORRECTED_SLOPE_ERR %f\n",uncorr_slope_err);
 
 		/*If the error on the original phase is worse, copy over local copy*/
 		if (uncorr_slope_err > slope_err) {
