@@ -755,7 +755,9 @@ void Filter_Bad_ACFs(FITPRMS *fit_prms, llist ranges, double noise_pwr){
 	}
 
 
-	cutoff_pwr = noise_pwr * (1. + NOISE_SIGMA_THRESHOLD/sqrt(fit_prms->nave));
+	/* cutoff_pwr = noise_pwr * (1. + NOISE_SIGMA_THRESHOLD/sqrt(fit_prms->nave)); */
+	cutoff_pwr = noise_pwr *2.;
+
 	/*Removing low-power ACFs from the analysis by using an upper three-sigma level of the model noise distribution*/
 	llist_reset_iter(ranges);
 
@@ -926,10 +928,11 @@ void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 
 	double d_phi,sigma_bar,d_tau;
 	double slope_est = 0.0 ,slope_denom = 0.0,slope_num = 0.0, slope_err = 0.0;
-	double uncorr_slope_est, uncorr_slope_err;
+	double uncorr_slope_est = 0.0, uncorr_slope_err= 0.0;
+	double piecewise_slope_est = 0.0;
 	int total_2pi_corrections = 0;
 	double S_xy = 0.0, S_xx = 0.0;
-	int i = 0;
+	int i = 0, num_local_phases=0;;
 
 	range_node = (RANGENODE*) range;
 
@@ -945,12 +948,12 @@ void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 	do{
 
 		llist_get_iter(range_node->phases, (void**)&phase_curr);
-		local_copy[i++] = *phase_curr;
+                local_copy[num_local_phases++] = *phase_curr;
 
 	}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
 
 
-	for (i=0; i<llist_size(range_node->phases) - 1; i++) {
+	for (i=0; i<num_local_phases - 1; i++) {                                          /**/
 		d_phi = local_copy[i+1].phi - local_copy[i].phi;
 		sigma_bar = (local_copy[i+1].sigma + local_copy[i].sigma)/2;
 		d_tau = local_copy[i+1].t - local_copy[i].t;
@@ -962,11 +965,11 @@ void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 
 	}
 
-	slope_est = slope_num / slope_denom;
+	piecewise_slope_est = slope_num / slope_denom;
 
 
-	for (i=0; i<llist_size(range_node->phases) - 1; i++) {
-		phase_correction(&local_copy[i], slope_est, &total_2pi_corrections);
+	for (i=0; i<num_local_phases; i++) {
+		phase_correction(&local_copy[i], piecewise_slope_est, &total_2pi_corrections);
 	}
 
 	/*We determine whether wrapped or unwrapped phase has better error on fit. Select
@@ -976,23 +979,24 @@ void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 		/*Quickly fit unwrapped phase for slope and err. Needed to compare error*/
 		S_xx = 0.0;
 		S_xy = 0.0;
-		for (i=0; i<llist_size(range_node->phases); i++){
-			if(local_copy[i].sigma > 0){
-				S_xy += (local_copy[i].phi * local_copy[i].t)/
-							(local_copy[i].sigma * local_copy[i].sigma);
-				S_xx += (local_copy[i].t * local_copy[i].t)/
-							(local_copy[i].sigma * local_copy[i].sigma);
-			}
+		for (i=0; i<num_local_phases; i++){                                       /**/
+                    if (local_copy[i].sigma >0){
+                        S_xy += (local_copy[i].phi * local_copy[i].t)/
+					(local_copy[i].sigma * local_copy[i].sigma);
+                        S_xx += (local_copy[i].t * local_copy[i].t)/
+					(local_copy[i].sigma * local_copy[i].sigma);
+                    }
 		}
 
 		slope_est = S_xy / S_xx;
-		for (i=0; i<llist_size(range_node->phases); i++){
-			if(local_copy[i].sigma > 0){
-				slope_err += ((slope_est * local_copy[i].t - local_copy[i].phi) *
-										(slope_est * local_copy[i].t - local_copy[i].phi)) /
-										(local_copy[i].sigma * local_copy[i].sigma);
-			}
-		}
+		for (i=0; i<num_local_phases; i++){                                        /**/
+                    if (local_copy[i].sigma > 0) {
+			slope_err += ((slope_est * local_copy[i].t - local_copy[i].phi) *
+					(slope_est * local_copy[i].t - local_copy[i].phi)) /
+					(local_copy[i].sigma * local_copy[i].sigma);
+                    }
+                    
+                }
 
 		/*Quick fit of original phase*/
 		llist_reset_iter(range_node->phases);
@@ -1022,17 +1026,21 @@ void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms){
 
 		}while(llist_go_next(range_node->phases) != LLIST_END_OF_LIST);
 
-		fprintf(stderr,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
+		/* fprintf(stderr,"TIME %d-%02d-%02dT%02d:%02d:%f\n",fit_prms->time.yr, fit_prms->time.mo,
 													fit_prms->time.dy, fit_prms->time.hr,
 													fit_prms->time.mt, fit_prms->time.sc +
 													fit_prms->time.us/1.0e6);
 		fprintf(stderr,"BEAM %02d\n",fit_prms->bmnum);
 		fprintf(stderr,"RANGE %02d\n",range_node->range);
-		fprintf(stderr,"CORRECTED_SLOPE_ERR %f\n",slope_err);
+		fprintf(stderr,"2PI_CORRECTIONS %d\n",total_2pi_corrections);
+		fprintf(stderr,"INITIAL_SLOPE_EST %f\n",piecewise_slope_est);
+		fprintf(stderr,"CORRECTED_SLOPE_ERR %f\n", slope_err);
+		fprintf(stderr,"CORRECTED_SLOPE %f\n", slope_est);
 		fprintf(stderr,"UNCORRECTED_SLOPE_ERR %f\n",uncorr_slope_err);
+		fprintf(stderr,"UNCORRECTED_SLOPE %f\n",uncorr_slope_est); */
 
 		/*If the error on the original phase is worse, copy over local copy*/
-		if (uncorr_slope_err > slope_err) {
+		if (uncorr_slope_err > slope_err) {	
 			i=0;
 			llist_reset_iter(range_node->phases);
 			do{
