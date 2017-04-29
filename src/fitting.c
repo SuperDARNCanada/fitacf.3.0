@@ -29,7 +29,7 @@ July 2015
 #include <stdio.h>
 
 /**
-For a given range, both the two parameter linear and quadratic fits are 
+For a given range, both the two parameter linear and quadratic fits are
 performed for power
 */
 void Power_Fits(llist_node range){
@@ -59,13 +59,13 @@ For a given range, each phase lag has sigma calculated from fitted power
 and then the phase is unwrapped. The one parameter linear fit is performed
 to unwrapped phase.
 */
-void ACF_Phase_Fit(llist ranges,FITPRMS *fitted_prms){
+void ACF_Phase_Fit(llist ranges,FITPRMS *fit_prms){
 	PHASETYPE acf = ACF;
 
-	llist_for_each_arg(ranges,(node_func_arg)calculate_phase_sigma_for_range,fitted_prms,&acf);
+	llist_for_each_arg(ranges,(node_func_arg)calculate_phase_sigma_for_range,fit_prms,&acf);
 
-	llist_for_each(ranges,(node_func)ACF_Phase_Unwrap);
-	
+	llist_for_each_arg(ranges,(node_func_arg)ACF_Phase_Unwrap, fit_prms, NULL);
+
 	llist_for_each_arg(ranges,(node_func_arg)phase_fit_for_range,&acf,NULL);
 
 
@@ -76,12 +76,12 @@ For a given range, each XCF phase lag has sigma calculated from fitted ACF power
 and then the phase is unwrapped. The two parameter linear fit is performed
 to unwrapped phase.
 */
-void XCF_Phase_Fit(llist ranges,FITPRMS *fitted_prms){
+void XCF_Phase_Fit(llist ranges,FITPRMS *fit_prms){
 	PHASETYPE xcf = XCF;
-	llist_for_each_arg(ranges,(node_func_arg)calculate_phase_sigma_for_range,fitted_prms,&xcf);
+	llist_for_each_arg(ranges,(node_func_arg)calculate_phase_sigma_for_range,fit_prms,&xcf);
 
 	llist_for_each(ranges,(node_func)XCF_Phase_Unwrap);
-	
+
 	llist_for_each_arg(ranges,(node_func_arg)phase_fit_for_range,&xcf,NULL);
 
 
@@ -109,17 +109,17 @@ void phase_fit_for_range(llist_node range,PHASETYPE *phasetype){
 Helper function to calculate sigmas for a list of phase lags at a given range for
 either XCF or ACF. For now XCF uses the same routine as ACF.
 */
-void calculate_phase_sigma_for_range(llist_node range,FITPRMS *fitted_prms,PHASETYPE *phasetype){
+void calculate_phase_sigma_for_range(llist_node range,FITPRMS *fit_prms,PHASETYPE *phasetype){
 	RANGENODE* range_node;
 	PHASENODE* xcf0 = NULL,*xcf1 = NULL;
 	range_node = (RANGENODE*) range;
 
 	switch(*phasetype){
-		case ACF: 
-			llist_for_each_arg(range_node->phases,(node_func_arg)calculate_phase_sigma,range_node,(void*)fitted_prms);
+		case ACF:
+			llist_for_each_arg(range_node->phases,(node_func_arg)calculate_phase_sigma,range_node,(void*)fit_prms);
 			break;
-		case XCF: 
-			llist_for_each_arg(range_node->elev,(node_func_arg)calculate_phase_sigma,range_node,(void*)fitted_prms);
+		case XCF:
+			llist_for_each_arg(range_node->elev,(node_func_arg)calculate_phase_sigma,range_node,(void*)fit_prms);
 			llist_reset_iter(range_node->elev);
 
 			/*Since lag 0 phase is included for elevation fit, we set lag 0 sigma the
@@ -133,7 +133,7 @@ void calculate_phase_sigma_for_range(llist_node range,FITPRMS *fitted_prms,PHASE
 			break;
 	}
 
-	
+
 
 }
 
@@ -141,7 +141,7 @@ void calculate_phase_sigma_for_range(llist_node range,FITPRMS *fitted_prms,PHASE
 /**
 Helper function to calculate sigma at individual lags
 */
-void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fitted_prms){
+void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fit_prms){
 	PHASENODE* phase_node;
 	RANGENODE* range_node;
 	double inverse_alpha_2,pwr,inverse_pwr_2;
@@ -150,18 +150,18 @@ void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fitted_p
 	range_node = (RANGENODE*) range;
 
 	/*at this point sigma is holding its value of alpha to make
-	  list traversal easier at this point. This value gets set in 
+	  list traversal easier at this point. This value gets set in
 	  new_phase_node()*/
 	inverse_alpha_2 = 1/phase_node->sigma;
 	pwr = exp(-1 * fabs(range_node->l_pwr_fit->b) * phase_node->t);
 
 	inverse_pwr_2 = 1/(pwr * pwr);
-	phase_node->sigma = sqrt((inverse_alpha_2 * inverse_pwr_2 - 1)/(2 * fitted_prms->nave));
+	phase_node->sigma = sqrt((inverse_alpha_2 * inverse_pwr_2 - 1)/(2 * fit_prms->nave));
 	if(isnan(phase_node->sigma)){
 	  fprintf(stderr,"range: %d, inverse_alpha: %f, pwr slope: %f, pwr: %f, inverse pwr: %f\n",range_node->range,inverse_alpha_2, range_node->l_pwr_fit->b,pwr,inverse_pwr_2);
 	}
 	/*Sigma values larger than PI make no physical sense so anything larger is set to PI*/
-	if (phase_node->sigma > M_PI) phase_node->sigma = M_PI; 
+	if (phase_node->sigma > M_PI) phase_node->sigma = M_PI;
 
 }
 

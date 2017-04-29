@@ -52,13 +52,13 @@ bool range_node_eq(llist_node node,llist_node cmp);
 bool alpha_node_eq(llist_node node,llist_node cmp);
 
 void print_node(llist_node node);
-void print_range_node(llist_node node);
-void print_lag_node(llist_node node);
+void print_range_node(llist_node node, FITPRMS *fit_prms);
+void print_lag_node(llist_node node, FITPRMS *fit_prms);
 void print_pwr_node(llist_node node,FILE* fp);
 void print_alpha_node(llist_node node, FILE* fp);
 void print_phase_node(llist_node node,FILE* fp);
-void print_phase_node_to_file(llist_node node);
-void print_uncorrected_phase(llist_node node);
+void print_phase_node_to_file(llist_node node,FILE* fp);
+void print_uncorrected_phase(llist_node node, FITPRMS* fit_prms);
 
 
 
@@ -75,7 +75,7 @@ void Filter_Bad_ACFs(FITPRMS *fit_prms, llist good_ranges, double noise_pwr);
 void Find_CRI(llist_node node,FITPRMS *fit_prms);
 void Find_Alpha(llist_node range,llist lags,FITPRMS *fit_prms);
 void Fill_Data_Lists_For_Range(llist_node range,llist lags,FITPRMS *fit_prms);
-void ACF_Phase_Unwrap(llist_node range);
+void ACF_Phase_Unwrap(llist_node range, FITPRMS* fit_prms);
 void XCF_Phase_Unwrap(llist_node range);
 void Filter_Low_Pwr_Lags(llist_node range, FITPRMS* fit_prms);
 void Filter_TX_Overlap(llist ranges, llist lags, FITPRMS *fit_prms);

@@ -110,6 +110,16 @@ typedef struct fit_prms {
   double phidiff;
   double tdiff;
   double vdir;
+  struct {
+    short yr;
+    short mo;
+    short dy;
+    short hr;
+    short mt;
+    short sc;
+    int us;
+  } time;
+
 }FITPRMS;
 
 

@@ -34,13 +34,13 @@ typedef enum{
 }PHASETYPE;
 
 void Power_Fits(llist_node range);
-void ACF_Phase_Fit(llist ranges,FITPRMS *fitted_prms);
-void XCF_Phase_Fit(llist ranges,FITPRMS *fitted_prms);
+void ACF_Phase_Fit(llist ranges,FITPRMS *fit_prms);
+void XCF_Phase_Fit(llist ranges,FITPRMS *fit_prms);
 
 void calculate_log_pwr_sigma(llist_node pwr);
 void phase_fit_for_range(llist_node range,PHASETYPE *phasetype);
-void calculate_phase_sigma_for_range(llist_node range, FITPRMS *fitted_prms,PHASETYPE *phasetype);
-void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fitted_prms);
+void calculate_phase_sigma_for_range(llist_node range, FITPRMS *fit_prms,PHASETYPE *phasetype);
+void calculate_phase_sigma(llist_node phase, llist_node range, FITPRMS *fit_prms);
 
 
-#endif 
+#endif
