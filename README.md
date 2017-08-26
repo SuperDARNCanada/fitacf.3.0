@@ -1,5 +1,5 @@
 # fitacf.3.0
-The repo for the new and improved fitacf routine
+*THIS PROJECT HAS BEEN MOVED INTO RST(https://github.com/SuperDARN/rst). THIS REPO IS NOW DEPRECATED!!!*
 
 ## Building the project
 Requires a version of RST to be set up with correct environment variables. Aftering running `make` in the project directory, a version of make_fit will be placed in a bin directory within the project folder.
